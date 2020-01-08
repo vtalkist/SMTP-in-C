@@ -4,21 +4,20 @@
 #include <stdio.h>
 #include <string.h>
 
-
-#define FROM    "<>" //e=mail
-#define TO      "<>" //e=mail
-#define CC      "<>" //e=mail
+#define FROM    "<>"
+#define TO      "<>"
+#define CC      "<>"
 
 static const char* payload_text[] = {
-  "Date: Mon, 08 Jan 2019 21:54:29 +1100\r\n",
+  "Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n",
   "To: " TO "\r\n",
   "From: " FROM "(Example User)\r\n",
   "Cc: " CC "(Another example User)\r\n",
-  "Message-ID: <dcd7cb36-11db-4аа87a-9f3fdfda-ergrtgtrffаfhb"
+  "Message-ID: <dcd7cb36-11dghb-4аа87a-ff9f3a-errtgtrffаfhb"
   "rfcpedant.example.org>\r\n",
   "Subject: SMTP  from C language\r\n",
   "\r\n", /* empty line to divide headers from body, see RFC5322 */
-  "Hello, Ivanka!.\r\n",
+  "Text.\r\n",
   NULL
 };
 
@@ -54,26 +53,34 @@ int main(void)
     CURLcode res = CURLE_OK;
     struct curl_slist* recipients = NULL;
     struct upload_status upload_ctx;
-
+    curl_mimepart* part;
+    curl_mime* mime;
     upload_ctx.lines_read = 0;
 
     curl = curl_easy_init();
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, "smtps://smtp.gmail.com:465");
         curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
-        curl_easy_setopt(curl, CURLOPT_USERNAME, ""); //e=mail
-        curl_easy_setopt(curl, CURLOPT_PASSWORD, ""); //password 
+        curl_easy_setopt(curl, CURLOPT_USERNAME, "");
+        curl_easy_setopt(curl, CURLOPT_PASSWORD, "");
         curl_easy_setopt(curl, CURLOPT_MAIL_FROM, FROM);
-        
+     
         recipients = curl_slist_append(recipients, TO);
         recipients = curl_slist_append(recipients, CC);
         curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
 
         curl_easy_setopt(curl, CURLOPT_READFUNCTION, payload_source);
+
         curl_easy_setopt(curl, CURLOPT_READDATA, &upload_ctx);
         curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
 
+        /* Add the current source program as an attachment. */
+        mime = curl_mime_init(curl);
+        part = curl_mime_addpart(mime);
+        curl_mime_filedata(part, "file.txt");
+        curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
         res = curl_easy_perform(curl);
+        /* Add the current source program as an attachment. */
 
         /* Check for errors */
         if (res != CURLE_OK)
